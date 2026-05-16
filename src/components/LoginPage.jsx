@@ -28,7 +28,7 @@ function ParticleCanvas() {
         if (p.x < 0) p.x = w; if (p.x > w) p.x = 0;
         if (p.y < 0) p.y = h; if (p.y > h) p.y = 0;
         ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(96,165,250,${p.o})`; ctx.fill();
+        ctx.fillStyle = `rgba(99,102,241,${p.o * 0.6})`; ctx.fill();
       }
       // connection lines
       for (let i = 0; i < particles.length; i++) {
@@ -38,7 +38,7 @@ function ParticleCanvas() {
           if (d < 140) {
             ctx.beginPath(); ctx.moveTo(particles[i].x, particles[i].y);
             ctx.lineTo(particles[j].x, particles[j].y);
-            ctx.strokeStyle = `rgba(96,165,250,${0.06 * (1 - d / 140)})`;
+            ctx.strokeStyle = `rgba(99,102,241,${0.04 * (1 - d / 140)})`;
             ctx.lineWidth = 0.6; ctx.stroke();
           }
         }
@@ -228,7 +228,7 @@ export default function LoginPage({ onLoginSuccess }) {
             {mode === 'login' && (
               <form onSubmit={handleLogin} className="lp-form" autoComplete="on">
                 <div className="lp-form-header">
-                  <h2>Welcome back</h2>
+                  <h2>Welcome back   </h2>
                   <p>Sign in to access the operations dashboard</p>
                 </div>
 
