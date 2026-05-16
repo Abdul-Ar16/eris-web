@@ -12,6 +12,7 @@ import StatisticsService from './services/statisticsService.js'
 import LogService from './services/logService.js'
 import NotificationService from './services/notificationService.js'
 import { downloadCSV, downloadText } from './utils/exportUtils.js'
+import LiveMap from './components/LiveMap.jsx'
 
 /** Full-screen basin detail layouts (Kelani pattern) keyed by station id. */
 const BASIN_DETAILS = {
@@ -416,20 +417,13 @@ function BasinWorkspace({ station, config, onClose }) {
         {basinNav === 'live-map' && (
           <div className="basin-page">
             <div className="basin-fake-map" aria-hidden>
-              <div className="basin-fake-map-toolbar">
-                <span>Terrain</span>
-                <span>Hazard overlay</span>
-                <span>Evacuation</span>
-              </div>
-              <div className="basin-fake-map-canvas">
-                <div className="basin-fake-river" />
-                <div className="basin-fake-zone safe">Buffer</div>
-                <div className="basin-fake-zone watch">Watch</div>
-                <div className={`basin-fake-zone stress ${riskTier}`}>Focus</div>
-                <div className="basin-fake-marker">
-                  <span className="basin-fake-pulse" />
-                  {station.id}
-                </div>
+              <div className="basin-fake-map-canvas" style={{ height: '400px' }}>
+                <LiveMap 
+                  stations={[station]} 
+                  center={[station.latitude || 7.8731, station.longitude || 80.7718]}
+                  zoom={12}
+                  selectedBasinId={station.id}
+                />
               </div>
               <p className="basin-fake-map-caption">{mapCaption}</p>
             </div>
@@ -717,10 +711,10 @@ function App() {
   // ─── Fallback static stations for the live map ─────────────────────────────
   const stations = useMemo(
     () => [
-      { id: 'KR-04', name: 'Kelani River Basin', risk: 'danger', hazard: 'flood', people: 1248, waterLevel: '8.2 m' },
-      { id: 'ML-09', name: 'Matara Highlands', risk: 'danger', hazard: 'landslide', people: 932, waterLevel: '6.7 m' },
-      { id: 'KG-02', name: 'Kalu Ganga', risk: 'warning', hazard: 'flood', people: 804, waterLevel: '5.9 m' },
-      { id: 'KH-11', name: 'Kandy Hills', risk: 'caution', hazard: 'landslide', people: 554, waterLevel: '4.3 m' },
+      { id: 'KR-04', name: 'Kelani River Basin', risk: 'danger', hazard: 'flood', people: 1248, waterLevel: '8.2 m', latitude: 6.95, longitude: 79.95 },
+      { id: 'ML-09', name: 'Matara Highlands', risk: 'danger', hazard: 'landslide', people: 932, waterLevel: '6.7 m', latitude: 6.12, longitude: 80.55 },
+      { id: 'KG-02', name: 'Kalu Ganga', risk: 'warning', hazard: 'flood', people: 804, waterLevel: '5.9 m', latitude: 6.58, longitude: 80.20 },
+      { id: 'KH-11', name: 'Kandy Hills', risk: 'caution', hazard: 'landslide', people: 554, waterLevel: '4.3 m', latitude: 7.29, longitude: 80.63 },
     ],
     [],
   )
@@ -732,7 +726,7 @@ function App() {
     landslideZones: false,
     evacuationRoutes: false,
   })
-  const [mapZoom, setMapZoom] = useState(1)
+  const [mapZoom, setMapZoom] = useState(7)
   
   // Analytics State
   const [analyticsFilter, setAnalyticsFilter] = useState({ date: 'Last 30 days', type: 'All types', province: 'All provinces' })
@@ -1085,7 +1079,7 @@ function App() {
                 type="button"
                 className="icon-btn"
                 aria-label="Zoom in"
-                onClick={() => setMapZoom((z) => Math.min(1.4, Math.round((z + 0.12) * 100) / 100))}
+                onClick={() => setMapZoom((z) => Math.min(18, z + 1))}
               >
                 +
               </button>
@@ -1093,7 +1087,7 @@ function App() {
                 type="button"
                 className="icon-btn"
                 aria-label="Zoom out"
-                onClick={() => setMapZoom((z) => Math.max(0.72, Math.round((z - 0.12) * 100) / 100))}
+                onClick={() => setMapZoom((z) => Math.max(4, z - 1))}
               >
                 −
               </button>
@@ -1152,89 +1146,16 @@ function App() {
               </button>
             </div>
           </div>
-          <div
-            className={[
-              'map-canvas',
-              mapBase === 'satellite' ? 'map-base--satellite' : 'map-base--terrain',
-              mapLayers.floodOverlay ? 'map-layer--flood' : '',
-              mapLayers.landslideZones ? 'map-layer--landslide' : '',
-              mapLayers.evacuationRoutes ? 'map-layer--evac' : '',
-            ]
-              .filter(Boolean)
-              .join(' ')}
-          >
-            <div className="map-canvas-zoom" style={{ transform: `scale(${mapZoom})` }}>
-              {mapLayers.floodOverlay && (
-                <div className="map-shade map-shade--flood" aria-hidden />
-              )}
-              {mapLayers.landslideZones && (
-                <div className="map-shade map-shade--landslide" aria-hidden />
-              )}
-              <div className="zone safe-zone" data-hazard="safe">
-                Northern Province
-              </div>
-              <div className="zone warning-zone" data-hazard="flood">
-                Kalu Ganga
-              </div>
-              <div className="zone danger-zone" data-hazard="flood">
-                Kelani Basin
-              </div>
-              <div className="zone caution-zone" data-hazard="landslide">
-                Matara
-              </div>
-              <div className="zone danger-zone south" data-hazard="landslide">
-                Kandy Hills
-              </div>
-              {mapLayers.evacuationRoutes && (
-                <svg
-                  className="map-evacuation-svg"
-                  viewBox="0 0 100 100"
-                  preserveAspectRatio="none"
-                  aria-hidden
-                >
-                  <defs>
-                    <linearGradient id="evacStroke" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stopColor="#0ea5e9" />
-                      <stop offset="100%" stopColor="#38bdf8" />
-                    </linearGradient>
-                  </defs>
-                  <polyline
-                    className="evac-line"
-                    points="27,48 40,38 54,32"
-                    fill="none"
-                    stroke="url(#evacStroke)"
-                    strokeWidth="1.2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeDasharray="4 2"
-                  />
-                  <polyline
-                    className="evac-line"
-                    points="50,65 56,52 62,40 64,30"
-                    fill="none"
-                    stroke="url(#evacStroke)"
-                    strokeWidth="1.2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeDasharray="4 2"
-                  />
-                  <polyline
-                    className="evac-line"
-                    points="40,14 33,28 28,42"
-                    fill="none"
-                    stroke="url(#evacStroke)"
-                    strokeWidth="0.9"
-                    strokeLinecap="round"
-                    strokeDasharray="3 2"
-                    opacity="0.85"
-                  />
-                </svg>
-              )}
-            </div>
-            <div className="map-scale">
-              <div className="scale-line"></div>
-              <div className="scale-labels"><span>0</span><span>50 km</span></div>
-            </div>
+          <div className="map-canvas">
+            <LiveMap 
+              stations={filteredLiveStations}
+              center={[7.8731, 80.7718]}
+              zoom={mapZoom}
+              mapBase={mapBase}
+              mapLayers={mapLayers}
+              onStationClick={setSelectedBasin}
+              selectedBasinId={selectedBasin}
+            />
           </div>
         </section>
 
